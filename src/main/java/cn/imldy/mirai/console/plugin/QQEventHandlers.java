@@ -3,6 +3,7 @@ package cn.imldy.mirai.console.plugin;
 import cn.imldy.mirai.console.plugin.conf.MyConf;
 import cn.imldy.mirai.console.plugin.conf.Patterns;
 import com.ejlchina.okhttps.HTTP;
+import com.sun.tools.javac.util.StringUtils;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.file.AbsoluteFile;
@@ -19,6 +20,9 @@ import net.mamoe.mirai.utils.MiraiLogger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -40,40 +44,46 @@ public class QQEventHandlers extends SimpleListenerHost {
     public void onGroupMessageEvent(GroupMessageEvent event) {
         MiraiLogger logger = event.getBot().getLogger();
         if (!matchSourceGroup(event.getGroup())) {
-            logger.debug("当前群消息的来源不是文件转发的sourceGroup");
+            //logger.debug("当前群消息的来源不是文件转发的sourceGroup");
             return;
         }
-        logger.info("当前群消息的来源是文件转发的sourceGroup");
 
         FileMessage fileMessage = null;
         for (SingleMessage singleMessage : event.getMessage()) {
-            logger.debug(String.format("开始判断是否是文件消息：%s", singleMessage));
+            //logger.debug(String.format("开始判断是否是文件消息：%s", singleMessage));
             if (singleMessage instanceof FileMessage) {
-                logger.debug(String.format("是文件消息：%s", singleMessage));
+                //logger.debug(String.format("是文件消息：%s", singleMessage));
                 FileMessage tempFileMessage = (FileMessage) singleMessage;
-                logger.debug(String.format("尝试匹配文件：%s", tempFileMessage));
+                //logger.debug(String.format("尝试匹配文件：%s", tempFileMessage));
                 if (matchFileMessage(tempFileMessage)) {
-                    logger.info(String.format("匹配到文件：%s", tempFileMessage));
+                    //logger.info(String.format("匹配到文件：%s", tempFileMessage));
                     fileMessage = tempFileMessage;
                 } else {
-                    logger.debug(String.format("未匹配到文件：%s", tempFileMessage));
+                    //logger.debug(String.format("未匹配到文件：%s", tempFileMessage));
                 }
             } else {
-                logger.debug(String.format("不是文件消息：%s", singleMessage));
+                //logger.debug(String.format("不是文件消息：%s", singleMessage));
             }
         }
         // 为空代表此条信息无文件，直接结束
         if (fileMessage == null) {
-            logger.debug("本次收到的消息中没有匹配到文件消息");
+            //logger.debug("本次收到的消息中没有匹配到文件消息");
             return;
+        }
+
+        // 随机等待5s ~ 30s
+        try {
+            Thread.sleep((int) (5000+Math.random()*30000));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
         // 确定本地文件存放目录
         File path = FileForward.INSTANCE.resolveDataFile("/");
-        File toDayFile = new File(path + "/" + fileMessage.getName());
-        logger.info(String.format("此匹配到文件将被下载至目录：%s", toDayFile));
+        File toDayFile = new File(path + MyConf.conf.getFileTargetPath() + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "/" + fileMessage.getName());
+        logger.info(String.format("下载至目录：%s", toDayFile));
 
-        logger.info("下载文件");
+        //logger.info("下载文件");
         // 下载文件
         AbsoluteFile absoluteFile = fileMessage.toAbsoluteFile(event.getGroup());
 
@@ -81,15 +91,18 @@ public class QQEventHandlers extends SimpleListenerHost {
 
         downloadFile(url, toDayFile);
 
-        logger.info("上传文件");
+        //logger.info("上传文件");
         // 上传文件
 
         Group targetGroup = event.getBot().getGroup(MyConf.conf.getTargetGroup());
         assert targetGroup != null;
+        if(event.getGroup().getId() == targetGroup.getId()){
+            return;
+        }
 
-        logger.info(String.format("准备上传文件到目标群：%d", targetGroup.getId()));
+        //logger.info(String.format("准备上传文件到目标群：%d", targetGroup.getId()));
 
-        logger.info("开始上传并发送");
+        //logger.info("开始上传并发送");
         uploadAndSend(targetGroup, toDayFile, fileMessage.getName());
 
     }
@@ -122,7 +135,7 @@ public class QQEventHandlers extends SimpleListenerHost {
                 remoteName
         ));
 
-        ExternalResource resource = ExternalResource.create(localFile);
+        ExternalResource resource = ExternalResource.create(localFile).toAutoCloseable();
         // 文件标识
         RemoteFiles files = targetGroup.getFiles();
         AbsoluteFolder root = files.getRoot();
@@ -131,15 +144,6 @@ public class QQEventHandlers extends SimpleListenerHost {
 
         AbsoluteFile uploadNewFile = folder.uploadNewFile(remoteName, resource);
         logger.info(String.format("上传文件成功，返回结果[%s]", uploadNewFile));
-
-        MessageReceipt<Group> receipt = targetGroup.sendMessage(uploadNewFile.toMessage());
-
-        int[] ids = receipt.getSource().getIds();
-        if (ids.length > 0) {
-            logger.info(String.format("发送上传文件消息成功，消息ID%s", Arrays.toString(ids)));
-        } else {
-            logger.error("发送上传文件消息失败");
-        }
 
     }
 
@@ -151,7 +155,7 @@ public class QQEventHandlers extends SimpleListenerHost {
      * @return 是否满足要求
      */
     private boolean matchSourceGroup(Group group) {
-        return group.getId() == MyConf.conf.getSourceGroup();
+        return MyConf.conf.getSourceGroup().contains(group.getId());
     }
 
     /**

@@ -7,8 +7,14 @@ import java.util.List;
  * @date 2022/03/18 17:02
  **/
 public class Conf {
-    List<String> patterns;
-    Long sourceGroup;
+    private List<String> patterns;
+
+    private List<Long> sourceGroup;
+    private Long targetGroup;
+
+    private String targetPath;
+
+    private String fileTargetPath;
 
     public List<String> getPatterns() {
         return patterns;
@@ -18,11 +24,11 @@ public class Conf {
         this.patterns = patterns;
     }
 
-    public Long getSourceGroup() {
+    public List<Long> getSourceGroup() {
         return sourceGroup;
     }
 
-    public void setSourceGroup(Long sourceGroup) {
+    public void setSourceGroup(List<Long> sourceGroup) {
         this.sourceGroup = sourceGroup;
     }
 
@@ -34,16 +40,20 @@ public class Conf {
         this.targetGroup = targetGroup;
     }
 
-    Long targetGroup;
-
-    String targetPath;
-
     public String getTargetPath() {
         return targetPath;
     }
 
     public void setTargetPath(String targetPath) {
         this.targetPath = targetPath;
+    }
+
+    public String getFileTargetPath() {
+        return fileTargetPath;
+    }
+
+    public void setFileTargetPath(String fileTargetPath) {
+        this.fileTargetPath = fileTargetPath;
     }
 
     @Override

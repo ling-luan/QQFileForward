@@ -1,8 +1,8 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.6.10'
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.6.10'
+    id 'org.jetbrains.kotlin.jvm' version '1.7.10'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.7.10'
 
-    id 'net.mamoe.mirai-console' version '2.10.1'
+    id 'net.mamoe.mirai-console' version '2.13.0'
 }
 dependencies {
     // https://mvnrepository.com/artifact/org.yaml/snakeyaml
